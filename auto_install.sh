@@ -102,14 +102,14 @@ show_help() {
     echo "  --help, -h              显示此帮助信息"
     echo
     echo "示例:"
-    echo "  # 交互式安装"
-    echo "  curl -sSL https://raw.githubusercontent.com/ClaraCora/DongTaiXiaFa/main/auto_install.sh | sudo bash"
+    echo "  # 交互式安装（推荐）"
+    echo "  bash <(curl -sSL https://raw.githubusercontent.com/ClaraCora/DongTaiXiaFa/main/auto_install.sh)"
     echo
     echo "  # 非交互式安装被控端"
-    echo "  curl -sSL https://raw.githubusercontent.com/ClaraCora/DongTaiXiaFa/main/auto_install.sh | sudo bash -s -- --install-type slave --service-install yes"
+    echo "  bash <(curl -sSL https://raw.githubusercontent.com/ClaraCora/DongTaiXiaFa/main/auto_install.sh) --install-type slave --service-install yes"
     echo
     echo "  # 非交互式安装主控端"
-    echo "  curl -sSL https://raw.githubusercontent.com/ClaraCora/DongTaiXiaFa/main/auto_install.sh | sudo bash -s -- --install-type master --slave-ip 192.168.1.100"
+    echo "  bash <(curl -sSL https://raw.githubusercontent.com/ClaraCora/DongTaiXiaFa/main/auto_install.sh) --install-type master --slave-ip 192.168.1.100"
 }
 
 # 打印带颜色的消息

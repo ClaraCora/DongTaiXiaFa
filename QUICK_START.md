@@ -5,7 +5,10 @@
 ### 方法一：智能一键安装（最推荐）
 
 ```bash
-# 直接下载并运行智能安装脚本
+# 方式一：bash开头的一键命令
+bash <(curl -sSL https://raw.githubusercontent.com/ClaraCora/DongTaiXiaFa/main/auto_install.sh)
+
+# 方式二：直接运行
 curl -sSL https://raw.githubusercontent.com/ClaraCora/DongTaiXiaFa/main/auto_install.sh | sudo bash
 ```
 
