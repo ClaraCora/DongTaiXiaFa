@@ -37,11 +37,12 @@ final/
 
 ### 方法一：智能一键安装（推荐）
 
+
+#### 一键安装
 ```bash
-# 一键安装
 bash <(curl -sSL https://raw.githubusercontent.com/ClaraCora/DongTaiXiaFa/main/auto_install.sh)
 ```
-# 一键卸载
+#### 一键卸载
 ```bash
 bash <(curl -sSL https://raw.githubusercontent.com/ClaraCora/DongTaiXiaFa/main/auto_install.sh) --uninstall both
 ```
