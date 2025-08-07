@@ -24,6 +24,94 @@ MASTER_CONFIG=""
 SLAVE_CONFIG=""
 SERVICE_INSTALL=""
 
+# 默认参数
+DEFAULT_INSTALL_TYPE="slave"
+DEFAULT_SERVICE_INSTALL="yes"
+DEFAULT_SLAVE_IP="127.0.0.1"
+DEFAULT_SLAVE_PORT="5000"
+DEFAULT_CHECK_INTERVAL="300"
+DEFAULT_DNS_PATH="/etc/XrayR/dns.json"
+DEFAULT_LISTEN_PORT="5000"
+DEFAULT_AUTO_BACKUP="false"
+
+# 解析命令行参数
+parse_args() {
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --install-type)
+                INSTALL_TYPE="$2"
+                shift 2
+                ;;
+            --service-install)
+                SERVICE_INSTALL="$2"
+                shift 2
+                ;;
+            --slave-ip)
+                SLAVE_IP="$2"
+                shift 2
+                ;;
+            --slave-port)
+                SLAVE_PORT="$2"
+                shift 2
+                ;;
+            --check-interval)
+                CHECK_INTERVAL="$2"
+                shift 2
+                ;;
+            --dns-path)
+                DNS_PATH="$2"
+                shift 2
+                ;;
+            --listen-port)
+                LISTEN_PORT="$2"
+                shift 2
+                ;;
+            --auto-backup)
+                AUTO_BACKUP="$2"
+                shift 2
+                ;;
+            --help|-h)
+                show_help
+                exit 0
+                ;;
+            *)
+                echo "未知参数: $1"
+                show_help
+                exit 1
+                ;;
+        esac
+    done
+}
+
+# 显示帮助信息
+show_help() {
+    echo "动态家宽下发IP给被控端 - 智能一键安装脚本"
+    echo
+    echo "用法:"
+    echo "  $0 [选项]"
+    echo
+    echo "选项:"
+    echo "  --install-type TYPE     安装类型 (master|slave|both) [默认: slave]"
+    echo "  --service-install YES   是否安装服务 (yes|no) [默认: yes]"
+    echo "  --slave-ip IP           被控端IP地址 [默认: 127.0.0.1]"
+    echo "  --slave-port PORT       被控端端口 [默认: 5000]"
+    echo "  --check-interval SEC    检测间隔(秒) [默认: 300]"
+    echo "  --dns-path PATH         DNS文件路径 [默认: /etc/XrayR/dns.json]"
+    echo "  --listen-port PORT      监听端口 [默认: 5000]"
+    echo "  --auto-backup YES       是否自动备份 (yes|no) [默认: no]"
+    echo "  --help, -h              显示此帮助信息"
+    echo
+    echo "示例:"
+    echo "  # 交互式安装"
+    echo "  curl -sSL https://raw.githubusercontent.com/ClaraCora/DongTaiXiaFa/main/auto_install.sh | sudo bash"
+    echo
+    echo "  # 非交互式安装被控端"
+    echo "  curl -sSL https://raw.githubusercontent.com/ClaraCora/DongTaiXiaFa/main/auto_install.sh | sudo bash -s -- --install-type slave --service-install yes"
+    echo
+    echo "  # 非交互式安装主控端"
+    echo "  curl -sSL https://raw.githubusercontent.com/ClaraCora/DongTaiXiaFa/main/auto_install.sh | sudo bash -s -- --install-type master --slave-ip 192.168.1.100"
+}
+
 # 打印带颜色的消息
 print_info() {
     echo -e "${BLUE}[INFO]${NC} $1"
@@ -120,13 +208,32 @@ configure_master() {
     # 获取被控端地址
     echo
     print_info "请输入被控端信息:"
-    read -p "被控端IP地址: " slave_ip
-    read -p "被控端端口 (默认5000): " slave_port
-    slave_port=${slave_port:-5000}
     
-    # 获取检测间隔
-    read -p "IP检测间隔(秒，默认300): " check_interval
-    check_interval=${check_interval:-300}
+    # 使用命令行参数或交互式输入
+    if [ -n "$SLAVE_IP" ]; then
+        slave_ip="$SLAVE_IP"
+        print_info "使用命令行参数: 被控端IP = $slave_ip"
+    elif [ -n "$SLAVE_PORT" ]; then
+        slave_port="$SLAVE_PORT"
+        print_info "使用命令行参数: 被控端端口 = $slave_port"
+    elif [ -n "$CHECK_INTERVAL" ]; then
+        check_interval="$CHECK_INTERVAL"
+        print_info "使用命令行参数: 检测间隔 = $check_interval"
+    elif [ -t 0 ]; then
+        # 交互式模式
+        read -p "被控端IP地址: " slave_ip
+        read -p "被控端端口 (默认5000): " slave_port
+        read -p "IP检测间隔(秒，默认300): " check_interval
+    else
+        # 非交互式模式，使用默认值
+        print_warning "检测到非交互式运行，使用默认配置"
+        slave_ip="${SLAVE_IP:-$DEFAULT_SLAVE_IP}"
+        slave_port="${SLAVE_PORT:-$DEFAULT_SLAVE_PORT}"
+        check_interval="${CHECK_INTERVAL:-$DEFAULT_CHECK_INTERVAL}"
+    fi
+    
+    slave_port=${slave_port:-$DEFAULT_SLAVE_PORT}
+    check_interval=${check_interval:-$DEFAULT_CHECK_INTERVAL}
     
     # 生成主控端配置
     MASTER_CONFIG="[DEFAULT]
@@ -171,17 +278,34 @@ configure_slave() {
     # 获取DNS文件路径
     echo
     print_info "请输入DNS配置信息:"
-    read -p "XrayR的dns.json文件路径 (默认/etc/XrayR/dns.json): " dns_path
-    dns_path=${dns_path:-/etc/XrayR/dns.json}
     
-    # 获取监听端口
-    read -p "监听端口 (默认5000): " listen_port
-    listen_port=${listen_port:-5000}
+    # 使用命令行参数或交互式输入
+    if [ -n "$DNS_PATH" ]; then
+        dns_path="$DNS_PATH"
+        print_info "使用命令行参数: DNS路径 = $dns_path"
+    elif [ -n "$LISTEN_PORT" ]; then
+        listen_port="$LISTEN_PORT"
+        print_info "使用命令行参数: 监听端口 = $listen_port"
+    elif [ -n "$AUTO_BACKUP" ]; then
+        auto_backup="$AUTO_BACKUP"
+        print_info "使用命令行参数: 自动备份 = $auto_backup"
+    elif [ -t 0 ]; then
+        # 交互式模式
+        read -p "XrayR的dns.json文件路径 (默认/etc/XrayR/dns.json): " dns_path
+        read -p "监听端口 (默认5000): " listen_port
+        read -p "是否启用自动备份 (y/N): " auto_backup
+    else
+        # 非交互式模式，使用默认值
+        print_warning "检测到非交互式运行，使用默认配置"
+        dns_path="${DNS_PATH:-$DEFAULT_DNS_PATH}"
+        listen_port="${LISTEN_PORT:-$DEFAULT_LISTEN_PORT}"
+        auto_backup="${AUTO_BACKUP:-$DEFAULT_AUTO_BACKUP}"
+    fi
     
-    # 获取备份设置
-    read -p "是否启用自动备份 (y/N): " auto_backup
-    auto_backup=${auto_backup:-false}
-    if [[ "$auto_backup" == "y" || "$auto_backup" == "Y" ]]; then
+    dns_path=${dns_path:-$DEFAULT_DNS_PATH}
+    listen_port=${listen_port:-$DEFAULT_LISTEN_PORT}
+    auto_backup=${auto_backup:-$DEFAULT_AUTO_BACKUP}
+    if [[ "$auto_backup" == "y" || "$auto_backup" == "Y" || "$auto_backup" == "yes" ]]; then
         auto_backup="true"
     else
         auto_backup="false"
@@ -377,7 +501,15 @@ select_install_type() {
     echo "3) 全部 (both) - 安装主控端和被控端"
     echo "4) 退出"
     
-    read -p "请输入选择 (1-4): " choice
+    # 检查是否从管道运行
+    if [ -t 0 ]; then
+        # 交互式模式
+        read -p "请输入选择 (1-4): " choice
+    else
+        # 非交互式模式，使用默认值
+        print_warning "检测到非交互式运行，使用默认选择: 被控端 (slave)"
+        choice=2
+    fi
     
     case $choice in
         1) INSTALL_TYPE="master" ;;
@@ -401,7 +533,15 @@ ask_service_install() {
     echo "1) 是 - 安装服务并设置开机自启"
     echo "2) 否 - 仅安装文件，手动启动"
     
-    read -p "请输入选择 (1-2): " choice
+    # 检查是否从管道运行
+    if [ -t 0 ]; then
+        # 交互式模式
+        read -p "请输入选择 (1-2): " choice
+    else
+        # 非交互式模式，使用默认值
+        print_warning "检测到非交互式运行，使用默认选择: 安装服务"
+        choice=1
+    fi
     
     case $choice in
         1) SERVICE_INSTALL="yes" ;;
@@ -432,11 +572,18 @@ main() {
     # 检查系统要求
     check_system
     
-    # 选择安装类型
-    select_install_type
-    
-    # 询问服务安装
-    ask_service_install
+    # 解析命令行参数
+    parse_args "$@"
+
+    # 如果没有指定安装类型，则进入交互式选择
+    if [ -z "$INSTALL_TYPE" ]; then
+        select_install_type
+    fi
+
+    # 如果没有指定服务安装，则进入交互式询问
+    if [ -z "$SERVICE_INSTALL" ]; then
+        ask_service_install
+    fi
     
     # 下载项目文件
     download_project
