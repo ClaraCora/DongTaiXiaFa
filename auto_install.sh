@@ -33,6 +33,7 @@ DEFAULT_CHECK_INTERVAL="300"
 DEFAULT_DNS_PATH="/etc/XrayR/dns.json"
 DEFAULT_LISTEN_PORT="5000"
 DEFAULT_AUTO_BACKUP="false"
+DEFAULT_SECRET_KEY=""
 
 # 解析命令行参数
 parse_args() {
@@ -70,6 +71,10 @@ parse_args() {
                 AUTO_BACKUP="$2"
                 shift 2
                 ;;
+            --secret-key)
+                SECRET_KEY="$2"
+                shift 2
+                ;;
             --help|-h)
                 show_help
                 exit 0
@@ -99,6 +104,7 @@ show_help() {
     echo "  --dns-path PATH         DNS文件路径 [默认: /etc/XrayR/dns.json]"
     echo "  --listen-port PORT      监听端口 [默认: 5000]"
     echo "  --auto-backup YES       是否自动备份 (yes|no) [默认: no]"
+    echo "  --secret-key KEY        通信密钥 [默认: 自动生成]"
     echo "  --help, -h              显示此帮助信息"
     echo
     echo "示例:"
@@ -110,6 +116,9 @@ show_help() {
     echo
     echo "  # 非交互式安装主控端"
     echo "  bash <(curl -sSL https://raw.githubusercontent.com/ClaraCora/DongTaiXiaFa/main/auto_install.sh) --install-type master --slave-ip 192.168.1.100"
+    echo
+    echo "  # 非交互式安装被控端（指定密钥）"
+    echo "  bash <(curl -sSL https://raw.githubusercontent.com/ClaraCora/DongTaiXiaFa/main/auto_install.sh) --install-type slave --secret-key your_secret_key_here"
 }
 
 # 打印带颜色的消息
@@ -265,15 +274,38 @@ retry_count = 3
 retry_interval = 5"
     
     print_success "主控端配置完成"
+    echo
+    print_info "=== 重要信息 ==="
     print_info "通信密钥: $secret_key"
+    print_info "请记录此密钥，被控端需要使用相同的密钥"
+    print_info "=================="
 }
 
 # 交互式配置被控端
 configure_slave() {
     print_header "配置被控端"
     
-    # 生成随机密钥
-    local secret_key=$(generate_secret_key)
+    # 获取通信密钥
+    echo
+    print_info "请输入通信密钥信息:"
+    
+    # 使用命令行参数或交互式输入
+    if [ -n "$SECRET_KEY" ]; then
+        secret_key="$SECRET_KEY"
+        print_info "使用命令行参数: 通信密钥 = $secret_key"
+    elif [ -t 0 ]; then
+        # 交互式模式
+        echo "请输入与主控端相同的通信密钥:"
+        read -p "通信密钥: " secret_key
+        if [ -z "$secret_key" ]; then
+            print_warning "未输入密钥，将生成新的随机密钥"
+            secret_key=$(generate_secret_key)
+        fi
+    else
+        # 非交互式模式，使用默认值
+        print_warning "检测到非交互式运行，生成新的随机密钥"
+        secret_key=$(generate_secret_key)
+    fi
     
     # 获取DNS文件路径
     echo
@@ -470,6 +502,7 @@ show_install_result() {
         echo "- 安装路径: /opt/ip_monitor_master"
         echo "- 配置文件: /opt/ip_monitor_master/master_config.ini"
         echo "- 服务名称: ip-monitor-master"
+        echo "- 通信密钥: $(grep '^secret_key =' /opt/ip_monitor_master/master_config.ini | cut -d'=' -f2 | tr -d ' ')"
     fi
     
     if [[ "$INSTALL_TYPE" == "slave" || "$INSTALL_TYPE" == "both" ]]; then
@@ -478,6 +511,7 @@ show_install_result() {
         echo "- 安装路径: /opt/ip_monitor_slave"
         echo "- 配置文件: /opt/ip_monitor_slave/slave_config.ini"
         echo "- 服务名称: ip-monitor-slave"
+        echo "- 通信密钥: $(grep '^secret_key =' /opt/ip_monitor_slave/slave_config.ini | cut -d'=' -f2 | tr -d ' ')"
     fi
     
     echo
