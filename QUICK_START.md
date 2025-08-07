@@ -2,7 +2,31 @@
 
 ## 🚀 一键安装
 
-### 方法一：使用安装脚本（推荐）
+### 方法一：智能一键安装（最推荐）
+
+```bash
+# 直接下载并运行智能安装脚本
+curl -sSL https://raw.githubusercontent.com/ClaraCora/DongTaiXiaFa/main/auto_install.sh | sudo bash
+```
+
+或者：
+
+```bash
+# 克隆项目后运行智能安装脚本
+git clone https://github.com/ClaraCora/DongTaiXiaFa.git
+cd DongTaiXiaFa
+sudo ./auto_install.sh
+```
+
+智能安装脚本特点：
+- 🔄 自动下载最新版本
+- ⚙️ 交互式配置（IP地址、端口、密钥等）
+- 🛠️ 自动生成配置文件
+- 🔧 可选安装systemd服务
+- 🛡️ 自动配置防火墙
+- 📊 显示安装结果和常用命令
+
+### 方法二：使用基础安装脚本
 
 ```bash
 # 下载项目
