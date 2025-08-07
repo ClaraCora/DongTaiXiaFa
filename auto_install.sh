@@ -295,25 +295,20 @@ EOF
 
 # 配置防火墙
 configure_firewall() {
-    print_info "配置防火墙..."
+    print_info "检查防火墙状态..."
     
-    # 检测防火墙类型
+    # 检测防火墙类型并提示用户
     if command -v ufw &> /dev/null; then
-        # Ubuntu/Debian UFW
-        ufw allow 5000/tcp
-        print_success "UFW防火墙已配置"
+        print_warning "检测到UFW防火墙，请手动开放端口: sudo ufw allow 5000/tcp"
     elif command -v firewall-cmd &> /dev/null; then
-        # CentOS/RHEL firewalld
-        firewall-cmd --permanent --add-port=5000/tcp
-        firewall-cmd --reload
-        print_success "firewalld防火墙已配置"
+        print_warning "检测到firewalld防火墙，请手动开放端口: sudo firewall-cmd --permanent --add-port=5000/tcp && sudo firewall-cmd --reload"
     elif command -v iptables &> /dev/null; then
-        # iptables
-        iptables -A INPUT -p tcp --dport 5000 -j ACCEPT
-        print_success "iptables防火墙已配置"
+        print_warning "检测到iptables防火墙，请手动开放端口: sudo iptables -A INPUT -p tcp --dport 5000 -j ACCEPT"
     else
-        print_warning "未检测到防火墙，请手动开放5000端口"
+        print_info "未检测到防火墙，端口5000应该可以直接访问"
     fi
+    
+    print_info "如果无法连接被控端，请检查防火墙设置"
 }
 
 # 启动服务
