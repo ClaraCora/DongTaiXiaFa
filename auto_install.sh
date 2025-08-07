@@ -75,6 +75,10 @@ parse_args() {
                 SECRET_KEY="$2"
                 shift 2
                 ;;
+            --uninstall)
+                UNINSTALL_TARGET="$2"
+                shift 2
+                ;;
             --help|-h)
                 show_help
                 exit 0
@@ -86,6 +90,49 @@ parse_args() {
                 ;;
         esac
     done
+}
+
+# 卸载主控端
+uninstall_master() {
+    print_info "卸载主控端..."
+    systemctl stop ip-monitor-master 2>/dev/null || true
+    systemctl disable ip-monitor-master 2>/dev/null || true
+    rm -f /etc/systemd/system/ip-monitor-master.service
+    rm -rf /opt/ip_monitor_master
+    systemctl daemon-reload
+    print_success "主控端已卸载"
+}
+
+# 卸载被控端
+uninstall_slave() {
+    print_info "卸载被控端..."
+    systemctl stop ip-monitor-slave 2>/dev/null || true
+    systemctl disable ip-monitor-slave 2>/dev/null || true
+    rm -f /etc/systemd/system/ip-monitor-slave.service
+    rm -rf /opt/ip_monitor_slave
+    systemctl daemon-reload
+    print_success "被控端已卸载"
+}
+
+# 卸载入口
+handle_uninstall() {
+    case "$UNINSTALL_TARGET" in
+        master)
+            uninstall_master
+            ;;
+        slave)
+            uninstall_slave
+            ;;
+        both)
+            uninstall_master
+            uninstall_slave
+            ;;
+        *)
+            print_error "--uninstall 仅支持 master、slave、both"
+            exit 1
+            ;;
+    esac
+    exit 0
 }
 
 # 显示帮助信息
@@ -105,6 +152,7 @@ show_help() {
     echo "  --listen-port PORT      监听端口 [默认: 5000]"
     echo "  --auto-backup YES       是否自动备份 (yes|no) [默认: no]"
     echo "  --secret-key KEY        通信密钥 [默认: 自动生成]"
+    echo "  --uninstall TARGET      卸载 master、slave 或 both"
     echo "  --help, -h              显示此帮助信息"
     echo
     echo "示例:"
@@ -119,6 +167,11 @@ show_help() {
     echo
     echo "  # 非交互式安装被控端（指定密钥）"
     echo "  bash <(curl -sSL https://raw.githubusercontent.com/ClaraCora/DongTaiXiaFa/main/auto_install.sh) --install-type slave --secret-key your_secret_key_here"
+    echo
+    echo "  # 卸载主控端/被控端/全部"
+    echo "  bash <(curl -sSL https://raw.githubusercontent.com/ClaraCora/DongTaiXiaFa/main/auto_install.sh) --uninstall master"
+    echo "  bash <(curl -sSL https://raw.githubusercontent.com/ClaraCora/DongTaiXiaFa/main/auto_install.sh) --uninstall slave"
+    echo "  bash <(curl -sSL https://raw.githubusercontent.com/ClaraCora/DongTaiXiaFa/main/auto_install.sh) --uninstall both"
 }
 
 # 打印带颜色的消息
@@ -608,6 +661,11 @@ main() {
     
     # 解析命令行参数
     parse_args "$@"
+
+    # 如果是卸载操作，直接处理
+    if [ -n "$UNINSTALL_TARGET" ]; then
+        handle_uninstall
+    fi
 
     # 如果没有指定安装类型，则进入交互式选择
     if [ -z "$INSTALL_TYPE" ]; then
