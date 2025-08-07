@@ -113,28 +113,29 @@ remove_install_dirs() {
 
 # 清理防火墙规则
 cleanup_firewall() {
-    print_info "清理防火墙规则..."
+    print_info "检查防火墙规则..."
     
-    # 检测防火墙类型并清理规则
+    # 检测防火墙类型并提示用户
     if command -v ufw &> /dev/null; then
-        # Ubuntu/Debian UFW
         if ufw status | grep -q "5000/tcp"; then
-            ufw delete allow 5000/tcp
-            print_success "UFW防火墙规则已清理"
+            print_warning "检测到UFW防火墙规则，请手动清理: sudo ufw delete allow 5000/tcp"
+        else
+            print_info "UFW防火墙中未发现5000端口规则"
         fi
     elif command -v firewall-cmd &> /dev/null; then
-        # CentOS/RHEL firewalld
         if firewall-cmd --list-ports | grep -q "5000/tcp"; then
-            firewall-cmd --permanent --remove-port=5000/tcp
-            firewall-cmd --reload
-            print_success "firewalld防火墙规则已清理"
+            print_warning "检测到firewalld防火墙规则，请手动清理: sudo firewall-cmd --permanent --remove-port=5000/tcp && sudo firewall-cmd --reload"
+        else
+            print_info "firewalld防火墙中未发现5000端口规则"
         fi
     elif command -v iptables &> /dev/null; then
-        # iptables - 注意：这只会删除最后一条规则
-        iptables -D INPUT -p tcp --dport 5000 -j ACCEPT 2>/dev/null || true
-        print_success "iptables防火墙规则已清理"
+        if iptables -L INPUT | grep -q "5000"; then
+            print_warning "检测到iptables防火墙规则，请手动清理: sudo iptables -D INPUT -p tcp --dport 5000 -j ACCEPT"
+        else
+            print_info "iptables防火墙中未发现5000端口规则"
+        fi
     else
-        print_warning "未检测到防火墙，请手动清理5000端口规则"
+        print_info "未检测到防火墙，无需清理防火墙规则"
     fi
 }
 
