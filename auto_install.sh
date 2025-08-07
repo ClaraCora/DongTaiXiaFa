@@ -3,7 +3,7 @@
 # 动态家宽下发IP给被控端 - 智能一键安装脚本 (多版本兼容版)
 # 作者: ClaraCora
 # 项目地址: https://github.com/ClaraCora/DongTaiXiaFa
-# 版本: 1.2
+# 版本: 1.3 (修正结果显示)
 
 set -e
 
@@ -25,8 +25,8 @@ MASTER_CONFIG=""
 SLAVE_CONFIG=""
 SERVICE_INSTALL=""
 UNINSTALL_TARGET=""
-MASTER_BINARY_NAME="" # 新增：用于存储正确的主控端二进制文件名
-SLAVE_BINARY_NAME=""  # 新增：用于存储正确的被控端二进制文件名
+MASTER_BINARY_NAME=""
+SLAVE_BINARY_NAME=""
 
 # 默认参数
 DEFAULT_INSTALL_TYPE="slave"
@@ -375,6 +375,7 @@ start_services() {
 # 显示安装结果
 show_install_result() {
     print_header "安装完成"
+    
     if [[ "$INSTALL_TYPE" == "master" || "$INSTALL_TYPE" == "both" ]]; then
         echo; print_info "主控端信息:"
         echo "- 安装路径: /opt/ip_monitor_master"
@@ -382,6 +383,7 @@ show_install_result() {
         echo "- 服务名称: ip-monitor-master"
         echo "- 通信密钥: $(grep '^secret_key =' /opt/ip_monitor_master/master_config.ini | cut -d'=' -f2 | tr -d ' ')"
     fi
+    
     if [[ "$INSTALL_TYPE" == "slave" || "$INSTALL_TYPE" == "both" ]]; then
         echo; print_info "被控端信息:"
         echo "- 安装路径: /opt/ip_monitor_slave"
@@ -389,9 +391,31 @@ show_install_result() {
         echo "- 服务名称: ip-monitor-slave"
         echo "- 通信密钥: $(grep '^secret_key =' /opt/ip_monitor_slave/slave_config.ini | cut -d'=' -f2 | tr -d ' ')"
     fi
-    echo; print_info "常用命令:"
-    echo "- 查看服务状态: systemctl status ip-monitor-master"
-    echo "- 查看日志: journalctl -u ip-monitor-master -f"
+    
+    echo
+    print_info "常用命令:"
+    
+    # 【核心修正】根据安装类型动态显示命令
+    if [[ "$INSTALL_TYPE" == "master" || "$INSTALL_TYPE" == "both" ]]; then
+        echo "- 查看主控端状态: systemctl status ip-monitor-master"
+        echo "- 查看主控端日志: journalctl -u ip-monitor-master -f"
+        echo "- 重启主控端服务: systemctl restart ip-monitor-master"
+        echo "- 停止主控端服务: systemctl stop ip-monitor-master"
+    fi
+    
+    if [[ "$INSTALL_TYPE" == "slave" || "$INSTALL_TYPE" == "both" ]]; then
+        # 如果同时安装了两者，添加一个分隔线以示区分
+        if [[ "$INSTALL_TYPE" == "both" ]]; then
+            echo "-----------------------------------------------------"
+        fi
+        echo "- 查看被控端状态: systemctl status ip-monitor-slave"
+        echo "- 查看被控端日志: journalctl -u ip-monitor-slave -f"
+        echo "- 重启被控端服务: systemctl restart ip-monitor-slave"
+        echo "- 停止被控端服务: systemctl stop ip-monitor-slave"
+    fi
+    
+    echo
+    print_info "更多信息请查看: https://github.com/ClaraCora/DongTaiXiaFa"
 }
 
 # 清理临时文件
