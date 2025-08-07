@@ -258,7 +258,7 @@ dns_file_path = $dns_path
 secret_key = $secret_key
 auto_backup = $auto_backup_val
 restart_service = true
-restart_command = /usr/local/bin/xrayr restart"
+restart_command = xrayr restart"
     
     print_success "被控端配置完成"
     print_info "通信密钥: $secret_key"
